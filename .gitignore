@@ -214,3 +214,19 @@ pip-log.txt
 
 #Mr Developer
 .mr.developer.cfg
+
+#############
+## Custom
+#############
+\.DS_Store
+\.htaccess
+\.idea/
+*.ini
+scan\.pl
+nbproject/
+composer\.lock
+test\.php
+test*
+uploadfile/
+vendor/
+*.html

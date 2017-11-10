@@ -343,17 +343,12 @@ class Medoo
 		return $this->pdo->quote($string);
 	}
 
-	protected function tableQuote($table)
+	public function tableQuote($table)
 	{
 		return '"' . $this->prefix . $table . '"';
 	}
 
-	protected function mapKey()
-	{
-		return ':MeDoO_' . $this->guid++ . '_mEdOo';
-	}
-
-	protected function columnQuote($string)
+	public function columnQuote($string)
 	{
 		preg_match('/(^#)?([a-zA-Z0-9_]*)\.([a-zA-Z0-9_]*)(\s*\[JSON\]$)?/', $string, $column_match);
 
@@ -364,6 +359,13 @@ class Medoo
 
 		return '"' . $string . '"';
 	}
+
+	protected function mapKey()
+	{
+		return ':MeDoO_' . $this->guid++ . '_mEdOo';
+	}
+
+
 
 	protected function columnPush(&$columns)
 	{
