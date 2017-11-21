@@ -1,5 +1,5 @@
 {
-	"name": "bbear/medoo",
+	"name": "bbear/medb",
 	"description": "fork medoo",
 	"authors": [
 		{"name": "BBear", "email": "1057179090@qq.com"}
@@ -13,7 +13,7 @@
 	},
 	"autoload": {
 		"psr-4": {
-			"Medoo\\": "/src"
+			"Medb\\": "/src"
 		}
 	}
 }
