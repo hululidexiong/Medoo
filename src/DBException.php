@@ -6,7 +6,7 @@
  * Time: 11:28
  */
 
-namespace Medoo;
+namespace LPdb;
 
 
 class DBException extends \Exception

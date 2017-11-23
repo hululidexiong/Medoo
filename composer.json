@@ -1,8 +1,10 @@
 {
-	"name": "bbear/medb",
+	"name": "bbear/lpdb",
 	"description": "fork medoo",
+	"type": "library",
+	"license": "MIT",
 	"authors": [
-		{"name": "BBear", "email": "1057179090@qq.com"}
+		{"name": "BBear", "email": "bear0909@foxmail.com"}
 	],
 	"require": {
 		"php": ">=7",
@@ -19,7 +21,7 @@
 	},
 	"autoload": {
 		"psr-4": {
-			"Medb\\": "/src"
+			"LPdb\\": "/src"
 		}
 	}
 }
