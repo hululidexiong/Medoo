@@ -1541,5 +1541,9 @@ class Medoo
 
 		return $output;
 	}
+
+	public function pdo(){
+		return $this->pdo;
+	}
 }
 ?>
