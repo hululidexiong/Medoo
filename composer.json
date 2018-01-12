@@ -1,5 +1,5 @@
 {
-	"name": "bbear/lpdb",
+	"name": "bbear/medmy",
 	"description": "fork medoo",
 	"type": "library",
 	"license": "MIT",
@@ -21,7 +21,7 @@
 	},
 	"autoload": {
 		"psr-4": {
-			"LPdb\\": "/src"
+			"MedMy\\": "/src"
 		}
 	}
 }

@@ -8,7 +8,7 @@
  * Released under the MIT license
  */
 
-namespace LPdb;
+namespace MedMy;
 
 use PDO;
 use Exception;

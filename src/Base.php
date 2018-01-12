@@ -6,7 +6,7 @@
  * Time: 11:18
  */
 
-namespace LPdb;
+namespace MedMy;
 
 
 class Base extends Medoo

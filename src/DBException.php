@@ -6,7 +6,7 @@
  * Time: 11:28
  */
 
-namespace LPdb;
+namespace MedMy;
 
 
 class DBException extends \Exception
