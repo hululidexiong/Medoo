@@ -2,7 +2,7 @@
 /*!
  * Medoo database framework
  * https://medoo.in
- * Version 1.5
+ * Version 1.5.4
  *
  * Copyright 2017, Angel Lai
  * Released under the MIT license
@@ -521,19 +521,18 @@ class Medoo
 		{
 			$type = gettype($value);
 
-			if ($type === 'array')
+			if (
+				$type === 'array' &&
+				preg_match("/^(AND|OR)(\s+#.*)?$/", $key, $relation_match)
+			)
 			{
-				$relationship = strpos($key, 'AND', 0) !== false ? 'AND' :
-				 				(strpos($key, 'OR', 0) !== false ? 'OR' : false);
+				$relationship = $relation_match[ 1 ];
 
-				 if ($relationship)
-				 {
-					$stack[] = !empty(array_diff_key($value, array_keys(array_keys($value)))) ?
-						'(' . $this->dataImplode($value, $map, ' ' . $relationship) . ')' :
-						'(' . $this->innerConjunct($value, $map, ' ' . $relationship, $conjunctor) . ')';
+				$stack[] = $value !== array_keys(array_keys($value)) ?
+					'(' . $this->dataImplode($value, $map, ' ' . $relationship) . ')' :
+					'(' . $this->innerConjunct($value, $map, ' ' . $relationship, $conjunctor) . ')';
 
-					continue;
-				}
+				continue;
 			}
 
 			$map_key = $this->mapKey();
@@ -588,11 +587,8 @@ class Medoo
 
 								foreach ($value as $index => $item)
 								{
-									$placeholders[] = $map_key . $index;
-									$map[ $map_key . $index ] = [
-										$item,
-										$this->typeMap($item, gettype($item))
-									];
+									$placeholders[] = $map_key . $index . '_i';
+									$map[ $map_key . $index . '_i' ] = $this->typeMap($item, gettype($item));
 								}
 
 								$stack[] = $column . ' NOT IN (' . implode(', ', $placeholders) . ')';
@@ -686,11 +682,8 @@ class Medoo
 
 							foreach ($value as $index => $item)
 							{
-								$placeholders[] = $map_key . $index;
-								$map[ $map_key . $index ] = [
-									$item,
-									$this->typeMap($item, gettype($item))
-								];
+								$placeholders[] = $map_key . $index . '_i';
+								$map[ $map_key . $index . '_i' ] = $this->typeMap($item, gettype($item));
 							}
 
 							$stack[] = $column . ' IN (' . implode(', ', $placeholders) . ')';
@@ -814,11 +807,11 @@ class Medoo
 						{
 							$stack[] = 'FIELD(' . $this->columnQuote($column) . ', ' . $this->arrayQuote($value) . ')';
 						}
-						else if ($value === 'ASC' || $value === 'DESC')
+						elseif ($value === 'ASC' || $value === 'DESC')
 						{
 							$stack[] = $this->columnQuote($column) . ' ' . $value;
 						}
-						else if (is_int($column))
+						elseif (is_int($column))
 						{
 							$stack[] = $this->columnQuote($value);
 						}
