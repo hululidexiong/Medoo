@@ -1,7 +1,7 @@
 <?php
 /**
  * Created by PhpStorm.
- * User: mhx
+ * User: BBear
  * Date: 2017/11/8
  * Time: 11:18
  */
@@ -9,18 +9,22 @@
 namespace MedMy;
 
 
-class Base extends Medoo
+class DbMy extends Medoo
 {
     protected static $db = [];
+    protected static $config = [];
 
     function __construct( $options )
     {
         parent::__construct($options);
     }
 
+    static protected function setConfig($config){
+        self::$config = $config;
+    }
     static protected function getConfig()
     {
-        return [
+        return self::$config ? self::$config : [
             [
                 // required
                 'database_type' => 'mysql',
@@ -28,7 +32,6 @@ class Base extends Medoo
                 'server' => '10.255.255.79',
                 'username' => 'RQXiaoS',
                 'password' => '123123',
-
                 // [optional]
                 'charset' => 'utf8',
                 'port' => 3306,
@@ -102,6 +105,61 @@ class Base extends Medoo
         parent::insert( $table, $data );
         $id = $this->id();
         return $id;
+    }
+
+    public function format($sql, $arg) {
+        $count = substr_count($sql, '%');
+        if (!$count) {
+            return $sql;
+        } elseif ($count > count($arg)) {
+            throw new DBException('SQL string format error! This SQL need "' . $count . '" vars to replace into.', 0, $sql);
+        }
+        $len = strlen($sql);
+        $i = $find = 0;
+        $ret = '';
+        while ($i <= $len && $find < $count) {
+            if ($sql{$i} == '%') {
+                $next = $sql{$i + 1};
+                if ($next == 't') {
+                    $ret .= $this->tableQuote($arg[$find]);
+                } elseif ($next == 's') {
+                    $ret .= $this->quote(is_array($arg[$find]) ? serialize($arg[$find]) : (string) $arg[$find]);
+                } elseif ($next == 'f') {
+                    $ret .= sprintf('%F', $arg[$find]);
+                } elseif ($next == 'd') {
+                    $ret .= intval($arg[$find]);
+                } elseif ($next == 'i') {
+                    $ret .= $arg[$find];
+                } elseif ($next == 'n') {
+                    if (!empty($arg[$find])) {
+                        $ret .= is_array($arg[$find]) ? implode(',', $this->quote($arg[$find])) : $this->quote($arg[$find]);
+                    } else {
+                        $ret .= '0';
+                    }
+                } else {
+                    $ret .= $this->quote($arg[$find]);
+                }
+                $i++;
+                $find++;
+            } else {
+                $ret .= $sql{$i};
+            }
+            $i++;
+        }
+        if ($i < $len) {
+            $ret .= substr($sql, $i);
+        }
+        return $ret;
+    }
+
+    /**
+     * note : this->query()->fetch
+     * @param int $fetch_style
+     * @return mixed
+     */
+    public function fetch( $fetch_style = \PDO::FETCH_ASSOC ){
+        // FETCH_COLUMN
+        return $this->statement->fetchAll( $fetch_style );
     }
 
 }

@@ -1,7 +1,7 @@
 <?php
 /**
  * Created by PhpStorm.
- * User: mhx
+ * User: BBear
  * Date: 2017/11/8
  * Time: 11:28
  */
@@ -9,7 +9,7 @@
 namespace MedMy;
 
 
-class DBException extends \Exception
+class DBException extends \PDOException
 {
     function __construct($message, $code = 0, Exception $previous = null)
     {

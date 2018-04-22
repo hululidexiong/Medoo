@@ -4,7 +4,7 @@
 	"type": "library",
 	"license": "MIT",
 	"authors": [
-		{"name": "BBear", "email": "bear0909@foxmail.com"}
+		{"name": "BBear", "email": "hululidexiong@163.com"}
 	],
 	"require": {
 		"php": ">=7",
@@ -15,7 +15,7 @@
 		"ext-pdo_sqlsrv": "For MSSQL database",
 		"ext-pdo_dblib": "For MSSQL or Sybase database on Linux/UNIX platform",
 		"ext-pdo_oci": "For Oracle database",
-		"ext-pdo_oci8": "For Oracle version 8 database",		
+		"ext-pdo_oci8": "For Oracle version 8 database",
 		"ext-pdo_pqsql": "For PostgreSQL database",
 		"ext-pdo_sqlite": "For SQLite database"
 	},
