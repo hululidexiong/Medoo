@@ -13,53 +13,41 @@ class DbMy extends Medoo
 {
     protected static $db = [];
     protected static $config = [];
+    protected static $currentDb;
 
     function __construct( $options )
     {
         parent::__construct($options);
     }
 
-    static protected function setConfig($config){
+    public static function setConfig( $config ){
         self::$config = $config;
     }
     static protected function getConfig()
     {
         return self::$config ? self::$config : [
-            [
-                // required
-                'database_type' => 'mysql',
-                'database_name' => 'RQXiaoS',
-                'server' => '10.255.255.79',
-                'username' => 'RQXiaoS',
-                'password' => '123123',
-                // [optional]
-                'charset' => 'utf8',
-                'port' => 3306,
-                'prefix' => ''
-            ]
+//            [
+//                // required
+//                'database_type' => 'mysql',
+//                'database_name' => 'RQXiaoS',
+//                'server' => '10.255.255.79',
+//                'username' => 'RQXiaoS',
+//                'password' => '123123',
+//                // [optional]
+//                'charset' => 'utf8',
+//                'port' => 3306,
+//                'prefix' => ''
+//            ]
         ];
     }
 
-    static function _init($select_db = 0)
-    {
-        if( !isset( self::$db[$select_db] ) ){
-            $config = self::getConfig();
 
-            if(!isset($config[$select_db])){
-                throw new DBException( $select_db .'config dose not exist!');
-            }
-            if ( !self::$db[$select_db] instanceof self) {
-                self::$db[$select_db] = new self($config[$select_db]);
-            }
 
-        }
-    }
-
-    static function _init_all(){
-        foreach( self::getConfig() as $i => $config ){
-            self::_init($i);
-        }
-    }
+//    static function _init_all(){
+//        foreach( self::getConfig() as $i => $config ){
+//            self::_init($i);
+//        }
+//    }
 
 
     public function __call($name, $arguments)
@@ -67,11 +55,39 @@ class DbMy extends Medoo
         parent::__call($name, $arguments);
     }
 
+
+    static function _init($select_db = 0)
+    {
+        if( !isset( self::$db[$select_db] ) ){
+            $config = self::getConfig();
+
+            if(!isset($config[$select_db])){
+                throw new DBException( $select_db .' config dose not exist!');
+            }
+            if ( !self::$db[$select_db] instanceof self) {
+                //self::$currentDb = self::$db[$select_db] = new self($config[$select_db]);
+                self::$currentDb = self::$db[$select_db] = new static($config[$select_db]);
+            }
+        }else{
+            self::$currentDb = self::$db[$select_db];
+        }
+        return self::$currentDb;
+        //self::$currentDb = self::$db[$select_db];
+    }
+
+    /**
+     * note :
+     * @param int $select_db
+     * @return DbMy
+     */
     static function e( $select_db = 0 ){
+
+
         if(empty(self::$db[$select_db])){
             self::_init($select_db);
         }
-        self::$db[$select_db];
+        self::$currentDb = self::$db[$select_db];
+        return self::$db[$select_db];
     }
 
     /**
@@ -102,7 +118,7 @@ class DbMy extends Medoo
     }
 
     public function insert( $table, $data = [] ){
-        parent::insert( $table, $data );
+        $e = parent::insert( $table, $data );
         $id = $this->id();
         return $id;
     }
@@ -152,14 +168,35 @@ class DbMy extends Medoo
         return $ret;
     }
 
+
     /**
-     * note : this->query()->fetch
+     * note :this->query()->fetch
+     * @param $sql
+     * @param array $args
      * @param int $fetch_style
-     * @return mixed
+     * @return array
      */
-    public function fetch( $fetch_style = \PDO::FETCH_ASSOC ){
+    public function fetch( $sql , $args = [] , $fetch_style = \PDO::FETCH_ASSOC ){
         // FETCH_COLUMN
-        return $this->statement->fetchAll( $fetch_style );
+        return $this->query( $this->format($sql , $args ) )->fetch( $fetch_style );
     }
 
+    /**
+     * note :
+     * @param $sql
+     * @param array $args
+     * @param int $fetch_style
+     * @return array
+     */
+    public function fetchAll($sql , $args = [] , $fetch_style = \PDO::FETCH_ASSOC ){
+        return $this->query( $this->format($sql , $args ) )->fetchAll( $fetch_style );
+    }
+
+    public function result( $sql , $args = []){
+        return $this->fetch( $sql , $args , \PDO::FETCH_COLUMN);
+    }
+
+    public function close(){
+
+    }
 }
