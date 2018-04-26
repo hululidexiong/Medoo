@@ -91,7 +91,7 @@ class DbMy extends Medoo
     }
 
     /**
-     * mhx
+     *
      * 说明：
      * echo Base::e()->uniqueInsert('shechem_test1' , [
      *       'note1' => 'unique2'
@@ -176,7 +176,7 @@ class DbMy extends Medoo
      * @param int $fetch_style
      * @return array
      */
-    public function fetch( $sql , $args = [] , $fetch_style = \PDO::FETCH_ASSOC ){
+    public function fetchFirst( $sql , $args = [] , $fetch_style = \PDO::FETCH_ASSOC ){
         // FETCH_COLUMN
         return $this->query( $this->format($sql , $args ) )->fetch( $fetch_style );
     }
@@ -192,7 +192,7 @@ class DbMy extends Medoo
         return $this->query( $this->format($sql , $args ) )->fetchAll( $fetch_style );
     }
 
-    public function result( $sql , $args = []){
+    public function resultFirst( $sql , $args = []){
         return $this->fetch( $sql , $args , \PDO::FETCH_COLUMN);
     }
 
