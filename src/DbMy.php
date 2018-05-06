@@ -64,8 +64,7 @@ class DbMy extends Medoo
             if(!isset($config[$select_db])){
                 throw new DBException( $select_db .' config dose not exist!');
             }
-            if ( !self::$db[$select_db] instanceof self) {
-                //self::$currentDb = self::$db[$select_db] = new self($config[$select_db]);
+            if ( !isset(self::$db[$select_db]) ||  !self::$db[$select_db] instanceof self) {
                 self::$currentDb = self::$db[$select_db] = new static($config[$select_db]);
             }
         }else{
@@ -123,7 +122,7 @@ class DbMy extends Medoo
         return $id;
     }
 
-    public function format($sql, $arg) {
+    public function format( $sql, array $arg) {
         $count = substr_count($sql, '%');
         if (!$count) {
             return $sql;
