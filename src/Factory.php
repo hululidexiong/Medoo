@@ -43,17 +43,18 @@ KEY `id` (`id`)
  * ALTER TABLE `First` ADD INDEX(`varchar_data`);
  * ALTER TABLE `First` CHANGE `varchar_data` `varchar_data` VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '字符串';
  *
- * `(.*?)`\s([a-zA-Z]*?)(\([0-9,]*?\))?\s(.*)
+ * support type : int tinyint char varchar float double text json
  *
  */
 class Factory extends DbMy
 {
 
+    protected static $pattern_entity_alias = '/(?<fullname>.+?)\sas\s(?<alias>[_a-zA-Z0-9]+)/';
     //parse sql to object   pdo 中 只有双引号 " 和 单引号 '
     protected static $pattern  = '/"(?<column>.*?)"\s(?<type>[a-zA-Z]*?)(?<length>\([0-9,]*?\))?\s(?<other>.*)/';
-    protected static $pattern_commend = '/(?:COMMENT\s)\'(?<comment>.+?)\',?/';
+    protected static $pattern_comment = '/(?:COMMENT\s)\'(?<comment>.*?)\',?/';
     //protected static $pattern_default = "/(?:DEFAULT\s)(?<default>(?'dot'')([\S]+?)(?'-dot'')|NULL)(?(dot)(?!)),?/";
-    protected static $pattern_default = "/(?:DEFAULT\s)(?<default>'.+?'|NULL),?/";
+    protected static $pattern_default = "/(?:DEFAULT\s)(?<default>'.*?'|NULL),?/";
     protected static $pattern_increment = 'AUTO_INCREMENT';
     //(?:DEFAULT\s)'?(?<default>[\S]*)'?,?
 
@@ -63,7 +64,8 @@ class Factory extends DbMy
     protected $factory_entities = [];
     protected $factory_obj_entities = [];
     protected $diff = []; // 现有表结构
-    protected $lineup = [];
+    protected $lineup = []; // 最新表结果
+    protected $lineup_exec = []; //待执行sql
 
     /**
      * note : 为了代码提示
@@ -78,30 +80,144 @@ class Factory extends DbMy
         array_push($this->factory_entities  ,  $entity );
     }
 
-    public function run(){
+    public function run( $exec = false ){
 
         $this->create_object_for_entity();
-
-        foreach ( $this->factory_obj_entities as $object ){
-            $tableName = get_class( $object );
+        foreach ( $this->factory_obj_entities as $entityObject ){
+            $tableName = get_class( $entityObject );
             //写入表属性
             $this->lineup[ $tableName ] = [];
-            foreach( $object as $key => $val){
+            foreach( $entityObject as $key => $val){
+
+                if( empty( $val['Type'] ) ){
+                    throw new DBException(' Column '. $key . ' Type does not exist!');
+                }
+
                 $this->lineup[$tableName][$key] = [
                     'Type' => $val['Type'],
                     'Length' => $val['Length'],
                     'Default' => isset($val['Default']) ? $val['Default'] : null ,
-                    'Commend' => isset($val['Commend']) ? $val['Commend'] : '' ,
+                    'Comment' => isset($val['Comment']) ? $val['Comment'] : '' ,
                     'AUTO_INCREMENT' => isset($val['AUTO_INCREMENT']) ? $val['AUTO_INCREMENT'] : false ,
                 ];
+            }
+
+            if(count( $this->lineup[$tableName] ) == 0){
+                //空表跳过
+                continue;
             }
 
             if( $this->existTable( $tableName ) ){
                 $this->tableToObject( $tableName );
                  //对比现有表结构
+//                var_dump( $this->diff[ $tableName ] );
+//                var_dump( $this->lineup[$tableName] );
+                foreach( $this->lineup[$tableName] as $key => $item){
+
+                    $statement = $this->EntityToSqlStatement( $item );
+
+                    if( isset($this->diff[ $tableName ][ $key ] ) && $this->diff[ $tableName ][ $key ]){
+                        $type = $default = $auto_increment = $comment = '' ;
+
+//                        var_dump( $this->diff[ $tableName ][ $key ]['Type'] != $statement['Type'] );
+//                        var_dump( $this->diff[ $tableName ][ $key ]['Type'] );
+//                        var_dump( $statement['Type'] );
+
+//                        var_dump(  $this->diff[ $tableName ][ $key ]['Default'] != $statement['Default'] );
+//                        var_dump( $this->diff[ $tableName ][ $key ]['Default'] );
+//                        var_dump( $statement['Default'] );
+
+//                        var_dump( $this->diff[ $tableName ][ $key ]['Increment'] != $statement['Increment'] );
+//                        var_dump( $this->diff[ $tableName ][ $key ]['Increment'] );
+//                        var_dump( $statement['Increment'] );
+//
+//                        var_dump( $this->diff[ $tableName ][ $key ]['Comment'] != $statement['Comment'] );
+//                        var_dump( $this->diff[ $tableName ][ $key ]['Comment'] );
+//                        var_dump( $statement['Comment'] );
+
+                        if( $this->diff[ $tableName ][ $key ]['Type'] != $statement['Type']){
+                            $type = $statement['Type'];
+                        }
+                        if( $this->diff[ $tableName ][ $key ]['Default'] != $statement['Default'] ){
+                            $default = $statement['Default'] ;
+                        }
+                        if( $this->diff[ $tableName ][ $key ]['Increment'] != $statement['Increment'] ){
+                            $auto_increment = $statement['Increment'] ;
+                        }
+                        if( $this->diff[ $tableName ][ $key ]['Comment'] != $statement['Comment'] ){
+                            $comment = $statement['Comment'] ;
+                        }
+                        if( $type  && $default && $auto_increment && $comment ){
+                            array_push( $this->lineup_exec , $this->format('ALTER TABLE %t MODIFY %i %i %i %i %i' , [ $tableName , $key , $type , $default , $auto_increment , $comment]));
+                        }elseif( !empty($default . $auto_increment . $comment)){
+                            array_push( $this->lineup_exec , $this->format('ALTER TABLE %t MODIFY %i %i %i %i %i' , [ $tableName , $key , $this->diff[ $tableName ][ $key ]['Type'] , $default , $auto_increment , $comment]));
+                        }
+
+                    }else{
+                        $type = $statement['Type'];
+                        $default = $statement['Default'] ;
+                        $auto_increment =  $statement['Increment'] ;
+                        $comment = $statement['Comment'] ;
+                        array_push( $this->lineup_exec , $this->format('ALTER TABLE %t ADD %i %i %i %i %i' , [ $tableName , $key , $type , $default , $auto_increment , $comment]));
+                    }
+                }
+
             }else{
                 //直接创建表
+                $statement_create_sql = $this->format(' CREATE TABLE %t (' , [ $tableName ]);
+                $statement_create_sql_inner = [];
+                foreach( $this->lineup[$tableName] as $key => $item) {
+                    $statement = $this->EntityToSqlStatement($item);
+                    $type = $statement['Type'];
+                    $default = $statement['Default'] ;
+                    $auto_increment =  $statement['Increment'] ;
+                    $comment = $statement['Comment'] ;
+                    //`id` int(11) NOT NULL AUTO_INCREMENT,
+                    $statement_create_sql_inner[] = $this->format(' %i %i %i %i %i ' , [ $key , $type , $default , $auto_increment , $comment]) . ",\n";
+                }
+                $statement_create_sql_inner_end = trim( array_pop($statement_create_sql_inner) , ",\n" );
+                foreach($statement_create_sql_inner as $sql){
+                    $statement_create_sql .= $sql;
+                }
+                $statement_create_sql .= $statement_create_sql_inner_end;
+                $statement_create_sql .= ') ENGINE=InnoDB DEFAULT CHARSET=utf8;';
+                $this->lineup_exec[] = $statement_create_sql;
+
+
+                //插入初始化数据
+                $statement_create_sql = '';
+                $default_data = $entityObject->default_data();
+
+                foreach( $default_data as$data){
+                    $columns = [];
+                    $values = [];
+                    foreach($data as $column => $val){
+                        $columns[] = $column;
+                        $values[] = $val;
+                    }
+                    $columns_str = implode(',' , $columns);
+                    $_this = $this;
+                    $values_arr = array_map(function( $arg )use($_this){
+                        return $_this->format(' %s ',[$arg]);
+                    } ,$values );
+                    $values_str = implode(',' , $values_arr);
+                    $statement_create_sql .= $this->format('insert into %t(%i) values(%i)' , [ $tableName , $columns_str , $values_str]) . ";\n";
+                }
+
+                $this->lineup_exec[] = $statement_create_sql;
             }
+        }
+
+        print_r($this->lineup_exec);
+        if($exec){
+            $this->run_exec_sql();
+        }
+    }
+
+    protected function run_exec_sql(){
+        foreach( $this->lineup_exec as $sql){
+            $this->query( $sql );
+            var_dump( $this->error() );
         }
     }
 
@@ -114,30 +230,60 @@ class Factory extends DbMy
         $arr_sql_line = explode("\n",$sql_statement);
         array_shift($arr_sql_line);
         array_pop($arr_sql_line);
-        var_dump( $arr_sql_line );
+        //var_dump( $arr_sql_line );
         foreach( $arr_sql_line as $line){
             $matches = [];
             if( preg_match (  self::$pattern ,  $line , $matches ) ){
                 $this->diff[ $sql_table_name ][$matches['column']] = [
                     'Type' => $matches['type'],
-                    'Length' => $matches['length']
+                    'Length' => substr( $matches['length'],1,-1)
                 ];
+
                 if(strpos( $line , self::$pattern_increment) !==false){
                     $this->diff[ $sql_table_name ][$matches['column']]['AUTO_INCREMENT'] = true;
+                }else{
+                    $this->diff[ $sql_table_name ][$matches['column']]['AUTO_INCREMENT'] = false;
                 }
 
                 $match_default = [];
                 if( preg_match (  self::$pattern_default ,  $line , $match_default ) ){
                     $this->diff[ $sql_table_name ][$matches['column']]['Default'] = $match_default['default'] == 'NULL' ? null : trim( $match_default['default'] , '\'');
+                }else{
+                    $this->diff[ $sql_table_name ][$matches['column']]['Default'] = null;
                 }
 
                 $match_comment = [];
-                if( preg_match (  self::$pattern_commend ,  $line , $match_comment ) ){
-                    $this->diff[ $sql_table_name ][$matches['column']]['Commend'] = $match_comment['comment'];
+                if( preg_match (  self::$pattern_comment ,  $line , $match_comment ) ){
+                    $this->diff[ $sql_table_name ][$matches['column']]['Comment'] = $match_comment['comment'];
+                }else{
+                    $this->diff[ $sql_table_name ][$matches['column']]['Comment'] = '';
                 }
+
+                $statement = $this->EntityToSqlStatement( $this->diff[ $sql_table_name ][$matches['column']] );
+                $this->diff[ $sql_table_name ][$matches['column']] = $statement;
             }
         }
-        var_dump($this->diff);
+        //var_dump($this->diff);
+    }
+
+    protected function EntityToSqlStatement( $item ){
+        $type = strtolower($item['Type']).'('.$item['Length'].')';
+
+        if($item['AUTO_INCREMENT']){
+            $auto_increment = ' PRIMARY KEY AUTO_INCREMENT ';
+            $default = '';
+        }else{
+            $auto_increment = '';
+            $default = $item['Default'] === null ? ' DEFAULT NULL ' : $this->format(' NOT NULL DEFAULT %s' , [ $item['Default'] ]);
+        }
+
+        $comment = $item['Comment'] ? $this->format(' COMMENT %s ' , [ $item['Comment'] ]) : '';
+        return [
+            'Type' => $type,
+            'Default' => $default,
+            'Increment' => $auto_increment,
+            'Comment' => $comment
+        ];
     }
 
     protected function showTable( $table ){
@@ -151,7 +297,8 @@ class Factory extends DbMy
     }
 
     protected function existTable( $table ){
-        return boolval(  $this->fetchFirst( $this->format( 'show tables like %s' , [ $this->tableQuote($table) ]) ) );
+//        echo $sql =  $this->format('show tables like %s;' , [ trim($this->tableQuote($table) , '"') ])  ;
+        return boolval(  $this->fetchFirst( 'show tables like %s;' , [ trim($this->tableQuote($table) , '"') ] ) );
     }
 
     protected function diff_construction(){
@@ -160,15 +307,24 @@ class Factory extends DbMy
 
     protected function create_object_for_entity(){
         foreach( $this->factory_entities  as $entity ){
-            $file = $entity . '.php';
+            $matches = [];
+            if(preg_match(self::$pattern_entity_alias , $entity , $matches)){
+                $entity_full_name = $matches['fullname'];
+                $entity_class = $matches['alias'];
+            }else{
+                $entity_full_name = $entity;
+                $entity_class = $entity;
+            }
+            $file = $entity_full_name . '.php';
             require $file;
-            if( !class_exists ( $entity , false) ){
-                throw new DBException(  $entity . ' Entity does not exist!' );
+
+            if( !class_exists ( $entity_class , false) ){
+                throw new DBException(  $entity_class . ' Entity does not exist , in ' .$entity_full_name );
             }
 
-            $object = new $entity();
-            if(! $object instanceof \Entity){
-                throw new DBException(  $entity . ' is  not instance of Entity!' );
+            $object = new $entity_class();
+            if(! $object instanceof Entity){
+                throw new DBException(  $entity_class . ' is  not instance of Entity!' );
             }
             array_push($this->factory_obj_entities  ,  $object );
         }
