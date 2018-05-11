@@ -1,6 +1,6 @@
 ### Doc
 
-###### Entity 对象
+###### Entity 对象 
 support type : int , tinyint , char , varchar , float , double , text , json
 Factory 会识别 ： Type , Length , AUTO_INCREMENT , Default , Comment. 五个属性
 ###### example:

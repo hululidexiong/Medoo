@@ -1,6 +1,6 @@
 {
 	"name": "bbear/medmy",
-	"description": "fork medoo",
+	"description": "fork medoo , support mysql orm",
 	"type": "library",
 	"license": "MIT",
 	"authors": [
