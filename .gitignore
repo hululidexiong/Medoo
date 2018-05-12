@@ -228,8 +228,6 @@ pip-log.txt
 scan\.pl
 nbproject/
 composer\.lock
-test\.php
-test*
 uploadfile/
 vendor/
 *.html

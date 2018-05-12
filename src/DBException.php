@@ -11,8 +11,11 @@ namespace MedMy;
 
 class DBException extends \PDOException
 {
-    function __construct($message, $code = 0, Exception $previous = null)
+    /**
+     * @return string the user-friendly name of this exception
+     */
+    public function getName()
     {
-        parent::__construct($message, $code, $previous);
+        return 'DBException: ';
     }
 }

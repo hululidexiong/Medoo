@@ -60,6 +60,7 @@ Factory 借助 phpunit 执行
         \MedMy\Factory::e()->pushTable( __DIR__ .'/EntityMode as Example');
         \MedMy\Factory::e()->run(1);
     }
+    
 ```
 
 ##### 不支持修改字段
