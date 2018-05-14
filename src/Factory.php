@@ -313,7 +313,12 @@ class Factory extends DbMy
                 $entity_class = $matches['alias'];
             }else{
                 $entity_full_name = $entity;
-                $entity_class = $entity;
+                $separator = strrpos( $entity , DIRECTORY_SEPARATOR);
+                if($separator !== false){
+                    $entity_class = substr( $entity , $separator + 1) ;
+                }else{
+                    $entity_class = $entity;
+                }
             }
             $file = $entity_full_name . '.php';
             require $file;
