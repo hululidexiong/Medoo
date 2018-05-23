@@ -52,7 +52,7 @@ class DbMy extends Medoo
 
     public function __call($name, $arguments)
     {
-        parent::__call($name, $arguments);
+        return parent::__call($name, $arguments);
     }
 
 
