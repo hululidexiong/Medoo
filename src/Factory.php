@@ -267,8 +267,15 @@ class Factory extends DbMy
     }
 
     protected function EntityToSqlStatement( $item ){
-        $type = strtolower($item['Type']).'('.$item['Length'].')';
-
+        $item['Type'] = strtolower($item['Type']);
+        switch($item['Type']){
+            case 'text':
+            case 'json':
+                $type =  $item['Type'] ;
+                break;
+            default:
+                $type = $item['Type'] . '('.$item['Length'].')';
+        }
         if($item['AUTO_INCREMENT']){
             $auto_increment = ' PRIMARY KEY AUTO_INCREMENT ';
             $default = '';

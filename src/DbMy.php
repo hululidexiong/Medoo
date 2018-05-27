@@ -82,7 +82,7 @@ class DbMy extends Medoo
      */
     static function e( $select_db = 0 ){
 
-
+        $select_db = $select_db ?? 0;
         if(empty(self::$db[$select_db])){
             self::_init($select_db);
         }
