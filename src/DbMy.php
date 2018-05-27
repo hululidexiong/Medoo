@@ -58,6 +58,7 @@ class DbMy extends Medoo
 
     static function _init($select_db = 0)
     {
+        $select_db = $select_db ?? 0;
         if( !isset( self::$db[$select_db] ) ){
             $config = self::getConfig();
 
