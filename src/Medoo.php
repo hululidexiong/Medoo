@@ -39,11 +39,17 @@ class Medoo
 
 	protected $guid = 0;
 
+	protected $debug_echo_error_switch=false;
+
 	public function __construct($options = null)
 	{
 		if (!is_array($options))
 		{
 			return false;
+		}
+
+		if( isset($options['debug']) ){
+			$this->debug_echo_error_switch = $options['debug'];
 		}
 
 		if (isset($options[ 'database_type' ]))
@@ -295,6 +301,14 @@ class Medoo
 			$statement->execute();
 
 			$this->statement = $statement;
+
+			if( $this->debug_echo_error_switch ){
+				$error = $this->error();
+				if(!empty($error) && $error[0]!='00000'){
+					throw new DBException( json_encode( $this->error() )  );
+					exit;
+				}
+			}
 
 			return $statement;
 		}
