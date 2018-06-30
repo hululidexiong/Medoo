@@ -109,7 +109,7 @@ class Factory extends DbMy
 
             if( $this->existTable( $tableName ) ){
                 $this->tableToObject( $tableName );
-                 //对比现有表结构
+                //对比现有表结构
 //                var_dump( $this->diff[ $tableName ] );
 //                var_dump( $this->lineup[$tableName] );
                 foreach( $this->lineup[$tableName] as $key => $item){
@@ -314,25 +314,31 @@ class Factory extends DbMy
 
     protected function create_object_for_entity(){
         foreach( $this->factory_entities  as $entity ){
-            $matches = [];
-            if(preg_match(self::$pattern_entity_alias , $entity , $matches)){
-                $entity_full_name = $matches['fullname'];
-                $entity_class = $matches['alias'];
+            //优先检查命名空间（传入的是命名空间形式 ）走autoload ， 或者类已存在
+            if( class_exists( $entity ) ){
+                $entity_class = $entity;
             }else{
-                $entity_full_name = $entity;
-                $separator = strrpos( $entity , DIRECTORY_SEPARATOR);
-                if($separator !== false){
-                    $entity_class = substr( $entity , $separator + 1) ;
+                $matches = [];
+                if(preg_match(self::$pattern_entity_alias , $entity , $matches)){
+                    $entity_full_name = $matches['fullname'];
+                    $entity_class = $matches['alias'];
                 }else{
-                    $entity_class = $entity;
+                    $entity_full_name = $entity;
+                    $separator = strrpos( $entity , DIRECTORY_SEPARATOR);
+                    if($separator !== false){
+                        $entity_class = substr( $entity , $separator + 1) ;
+                    }else{
+                        $entity_class = $entity;
+                    }
+                }
+                $file = $entity_full_name . '.php';
+                require $file;
+
+                if( !class_exists ( $entity_class , false) ){
+                    throw new DBException(  $entity_class . ' Entity does not exist , in ' .$entity_full_name );
                 }
             }
-            $file = $entity_full_name . '.php';
-            require $file;
 
-            if( !class_exists ( $entity_class , false) ){
-                throw new DBException(  $entity_class . ' Entity does not exist , in ' .$entity_full_name );
-            }
 
             $object = new $entity_class();
             if(! $object instanceof Entity){
