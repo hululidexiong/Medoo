@@ -85,6 +85,11 @@ class Factory extends DbMy
         $this->create_object_for_entity();
         foreach ( $this->factory_obj_entities as $entityObject ){
             $tableName = get_class( $entityObject );
+            //检查命名空间
+            if(strpos( $tableName , "\\")!==false){
+                $r = new \ReflectionClass( $tableName );
+                $tableName = $r->getShortName();
+            }
             //写入表属性
             $this->lineup[ $tableName ] = [];
             foreach( $entityObject as $key => $val){
