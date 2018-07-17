@@ -94,6 +94,11 @@ class Factory extends DbMy
             $this->lineup[ $tableName ] = [];
             foreach( $entityObject as $key => $val){
 
+                //过滤内部属性
+                if( in_array($key , ['_option'])){
+                    continue;
+                }
+
                 if( empty( $val['Type'] ) ){
                     throw new DBException(' Column '. $key . ' Type does not exist!');
                 }
