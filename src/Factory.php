@@ -83,13 +83,21 @@ class Factory extends DbMy
     public function run( $exec = false ){
 
         $this->create_object_for_entity();
-        foreach ( $this->factory_obj_entities as $entityObject ){
-            $tableName = get_class( $entityObject );
-            //检查命名空间
-            if(strpos( $tableName , "\\")!==false){
-                $r = new \ReflectionClass( $tableName );
-                $tableName = $r->getShortName();
+        foreach ( $this->factory_obj_entities as $item ){
+            $entityObject = $item[0];
+            $className = get_class( $entityObject );
+
+            if( $item[1]){
+                $tableName = $item[1];
+            }else{
+                //检查命名空间
+                $tableName = $className;
+                if(strpos( $className , "\\")!==false){
+                    $r = new \ReflectionClass( $className );
+                    $tableName = $r->getShortName();
+                }
             }
+
             //写入表属性
             $this->lineup[ $tableName ] = [];
             foreach( $entityObject as $key => $val){
@@ -324,23 +332,26 @@ class Factory extends DbMy
 
     protected function create_object_for_entity(){
         foreach( $this->factory_entities  as $entity ){
+
+            $alias = null;
+            $matches = [];
+            if(preg_match(self::$pattern_entity_alias , $entity , $matches)){
+                $entity = $matches['fullname'];
+                $alias = $matches['alias'];
+            }
+
             //优先检查命名空间（传入的是命名空间形式 ）走autoload ， 或者类已存在
             if( class_exists( $entity ) ){
                 $entity_class = $entity;
             }else{
-                $matches = [];
-                if(preg_match(self::$pattern_entity_alias , $entity , $matches)){
-                    $entity_full_name = $matches['fullname'];
-                    $entity_class = $matches['alias'];
+                $entity_full_name = $entity;
+                $separator = strrpos( $entity , DIRECTORY_SEPARATOR);
+                if($separator !== false){
+                    $entity_class = substr( $entity , $separator + 1) ;
                 }else{
-                    $entity_full_name = $entity;
-                    $separator = strrpos( $entity , DIRECTORY_SEPARATOR);
-                    if($separator !== false){
-                        $entity_class = substr( $entity , $separator + 1) ;
-                    }else{
-                        $entity_class = $entity;
-                    }
+                    $entity_class = $entity;
                 }
+
                 $file = $entity_full_name . '.php';
                 require $file;
 
@@ -354,7 +365,7 @@ class Factory extends DbMy
             if(! $object instanceof Entity){
                 throw new DBException(  $entity_class . ' is  not instance of Entity!' );
             }
-            array_push($this->factory_obj_entities  ,  $object );
+            array_push($this->factory_obj_entities  ,  [$object , $alias] );
         }
     }
 
