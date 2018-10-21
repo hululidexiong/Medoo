@@ -165,7 +165,12 @@ class Factory extends DbMy
                         if( $this->diff[ $tableName ][ $key ]['Comment'] != $statement['Comment'] ){
                             $comment = $statement['Comment'] ;
                         }
-                        if( $type  && $default && $auto_increment && $comment ){
+                        if( $type  || $default || $auto_increment || $comment ){
+                            $type = $type?:($this->diff[ $tableName ][ $key ]['Type']??'');
+                            $default = $default?:($this->diff[ $tableName ][ $key ]['Default']??'');
+                            $auto_increment = $auto_increment?:($this->diff[ $tableName ][ $key ]['Increment']??'');
+                            $comment = $comment?:($this->diff[ $tableName ][ $key ]['Comment']??'');
+
                             array_push( $this->lineup_exec , $this->format('ALTER TABLE %t MODIFY %i %i %i %i %i' , [ $tableName , $key , $type , $default , $auto_increment , $comment]));
                         }elseif( !empty($default . $auto_increment . $comment)){
                             array_push( $this->lineup_exec , $this->format('ALTER TABLE %t MODIFY %i %i %i %i %i' , [ $tableName , $key , $this->diff[ $tableName ][ $key ]['Type'] , $default , $auto_increment , $comment]));
