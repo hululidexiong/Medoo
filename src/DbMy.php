@@ -117,8 +117,8 @@ class DbMy extends Medoo
         return $id;
     }
 
-    public function insert( $table, $data = [] ){
-        $e = parent::insert( $table, $data );
+    public function insert( $table, $data = [], $replace = false ){
+        $e = parent::insert( $table, $data, $replace );
         $id = $this->id();
         return $id;
     }
