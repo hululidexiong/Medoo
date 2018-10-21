@@ -32,4 +32,9 @@ class Entity{
     function get_attr_strip(){
         return ['id' , 'inputtime'];
     }
+
+    //form 表单提交时允许更新的字段 不会获取的数据
+    function set_attr_strip(){
+        return [];
+    }
 }
