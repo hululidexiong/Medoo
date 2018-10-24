@@ -292,6 +292,7 @@ class Factory extends DbMy
     protected function EntityToSqlStatement( $item ){
         $item['Type'] = strtolower($item['Type']);
         switch($item['Type']){
+            case 'longtext':
             case 'text':
             case 'json':
                 $type =  $item['Type'] ;
