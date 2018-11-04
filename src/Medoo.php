@@ -736,7 +736,7 @@ class Medoo
 			$where_keys = array_keys($where);
 
 			$conditions = array_diff_key($where, array_flip(
-					['GROUP', 'ORDER', 'HAVING', 'LIMIT', 'LIKE', 'MATCH']
+					['GROUP', 'ORDER', 'HAVING', 'LIMIT', 'LIKE', 'MATCH', 'QUERY']
 			));
 
 			if (!empty($conditions))
@@ -744,6 +744,23 @@ class Medoo
 				$where_clause = ' WHERE ' . $this->dataImplode($conditions, $map, ' AND');
 			}
 
+			if (isset($where[ 'QUERY' ])) {
+				$QUERY = $where['QUERY'];
+				if(preg_match_all("/\:[a-zA-Z]+/", $QUERY[0], $relation_match)){
+					$result_match = $relation_match[0];
+					foreach($result_match as $key){
+						$map_key = $this->mapKey();
+						$rKey = substr($key,1);
+						if(!isset($QUERY[1][$rKey])){
+							throw new PDOException('query quote not match');
+						}
+						$map[ $map_key ] = [$QUERY[1][$rKey], PDO::PARAM_STR];
+						$QUERY[0] = str_replace($key, $map_key, $QUERY[0]);
+					}
+					$where_clause .= ($where_clause !== '' ? ' AND ' : ' WHERE') .$QUERY[0];
+				}
+
+			}
 			if (isset($where[ 'MATCH' ]))
 			{
 				$MATCH = $where[ 'MATCH' ];
